@@ -1,10 +1,34 @@
 from PIL import Image
 from colorsys import rgb_to_hls, hls_to_rgb
+from os.path import exists
+from os import mkdir
 
 class Photoshop:
+
+    filter_list = [
+            "greyscale",               
+            "sepia",           
+            "invert",             
+            "oppose",             
+            "spotlight",                
+            "flip",          
+            "flipx",             
+            "mirror",              
+            "mirrorx",              
+            "rotate",            
+            "rotate2",            
+            "brightness",
+    ]
+
     def __init__(self, img_path, mode):
         "Provide name for image stored within /Input/.\nImage will be edited with target mode and saved to output folder under the same name."
+
         self.path = f"Input/{img_path}"
+        self.applied = []
+
+        if not self.CheckDirs():
+            self.status = False
+            return
 
         try:
             self.img = Image.open(self.path).convert("RGB")
@@ -17,7 +41,61 @@ class Photoshop:
         
         self.buffer = list(self.img.getdata())
 
-        match(mode.lower()):
+        if type(mode) == list:
+            if len(mode) == 0:
+                print("No filters provided.")
+                return
+            
+            for fx in mode:
+                try:
+                    this_fx = fx.lower()
+                    if not self.MatchFX(this_fx):
+                        raise Exception()
+                
+                except:
+                    print(f"Invalid filter {this_fx}. No changes made.")
+                    return
+        
+        elif type(mode) == str:
+            try:
+                this_fx = mode.lower()
+                if not self.MatchFX(this_fx):
+                    raise Exception()
+                
+            except:
+                print(f"Invalid filter {this_fx}. No changes made.")
+                return
+            
+        else: # what the fuck?
+            print(f"Invalid filter format: {type(mode).__name__}. Expected list or string.")
+            return
+                
+
+        self.img.save(f"Output/{img_path}")
+        self.status = True
+        print("Done.")
+        print("Filters applied:")
+        [print(f"   {i}") for i in self.applied]
+        self.img.close()
+
+
+    def CheckDirs(self):
+        changes_made = False
+        if not exists("Input/"):
+            mkdir("Input/")
+            changes_made = True
+        if not exists("Output/"):
+            mkdir("Output/")
+            changes_made = True
+
+        if changes_made:
+            print("New directories have been created, please restart and try again.")
+        
+        return not changes_made
+
+
+    def MatchFX(self, m):
+        match(m):
             case "greyscale":
                 self.Greyscale()
             
@@ -56,15 +134,13 @@ class Photoshop:
                 self.Brightness(m)
 
             case _:
-                print(f"Unknown filter: {mode}")
+                print(f"Unknown filter: {m}")
                 self.status = False
-                return
+                return False
+        
+        self.applied += [m]
+        return True
 
-        self.img.save(f"Output/{img_path}")
-        self.status = True
-        print("Done.")
-        self.img.close()
-    
 
     def Greyscale(self):
         for x in range(self.width):
@@ -254,4 +330,4 @@ class Photoshop:
             x = float(input("Enter brightness multiplier: "))
             return x
         except:
-            return self.getmul() 
+            return self.getmul()
