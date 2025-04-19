@@ -38,8 +38,6 @@ class Photoshop:
             return
         
         self.width, self.height = self.img.size
-        
-        self.buffer = list(self.img.getdata())
 
         if type(mode) == list:
             if len(mode) == 0:
@@ -53,7 +51,8 @@ class Photoshop:
                         raise Exception()
                 
                 except:
-                    print(f"Invalid filter {this_fx}. No changes made.")
+                    print(f"Invalid filter '{this_fx}'. No changes made.")
+                    self.status = False
                     return
         
         elif type(mode) == str:
@@ -62,8 +61,10 @@ class Photoshop:
                 if not self.MatchFX(this_fx):
                     raise Exception()
                 
-            except:
-                print(f"Invalid filter {this_fx}. No changes made.")
+            except Exception as e:
+                print(e)
+                print(f"Invalid filter '{this_fx}'. No changes made.")
+                self.status = False
                 return
             
         else: # what the fuck?
@@ -132,6 +133,11 @@ class Photoshop:
             case "brightness":
                 m = self.getmul()
                 self.Brightness(m)
+
+            case "blur":
+                print("Blurring.")
+                print("Blurring image may take longer than other filters...")
+                self.Blur()
 
             case _:
                 print(f"Unknown filter: {m}")
@@ -268,11 +274,13 @@ class Photoshop:
 
 
     def Flip_x(self):
-        for x in range(self.width // 2):
+        m = self.width // 2
+        m += int(m % 2 == 0)
+        for x in range(m):
             for y in range(self.height):
 
-                dx = (self.width // 2) - x
-                new_x = self.width - 1 - dx
+                dx = (m) - x
+                new_x = self.width - dx
 
                 current_pixel = self.img.getpixel((x,y))
                 new_pixel = self.img.getpixel((new_x, y))
@@ -282,9 +290,11 @@ class Photoshop:
 
 
     def Flip(self):
-        buff = self.buffer
+        buff = list(self.img.getdata())
 
         mid = len(buff) // 2
+
+        mid += int(mid % 2 == 0)
 
         a = buff[:mid]
         b = buff[mid:]
@@ -331,3 +341,60 @@ class Photoshop:
             return x
         except:
             return self.getmul()
+    
+
+    def Clamp(val, a, b):
+        if val < a:
+            return a
+        
+        if val > b:
+            return b
+        
+        return val
+
+
+    def GetSums(self, ox, oy, rx, ry):
+        "'Blur' Util function"
+        c = Photoshop.Clamp
+
+        sx = c(int(ox-(rx/2)), 0, self.width)
+        ex = c(sx+rx, 0, self.width)
+        sy = c(int(oy-(ry/2)), 0, self.height)
+        ey = c(sy+ry, 0, self.height)
+
+        sum_red = 0
+        sum_green = 0
+        sum_blue = 0
+
+        for iy in range(sy, ey):
+            for ix in range(sx, ex):
+                if not (ix == ox and iy == oy):
+                    r,g,b = self.img.getpixel((ix,iy))
+                    sum_red += r
+                    sum_green += g
+                    sum_blue += b
+        
+        iters = ((ex - sx) * (ey - sy)) - 1 # minus the center pixel
+
+        avg_red = int(sum_red // iters)
+        avg_green = int(sum_green // iters)
+        avg_blue = int(sum_blue // iters)
+
+        return (avg_red, avg_green, avg_blue)
+
+
+    def Blur(self):
+        current_buffer = self.img.getdata()
+
+        tmp_buffer = []
+
+        x_range = 5
+        y_range = 5
+
+        for y in range(self.height):
+            for x in range(self.width):
+                avg_red, avg_green, avg_blue = self.GetSums(x,y,x_range,y_range)
+                new_pixel = (avg_red, avg_green, avg_blue)
+                tmp_buffer.append(new_pixel)
+        
+        self.img.putdata(tmp_buffer)
