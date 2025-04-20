@@ -3,30 +3,21 @@ from colorsys import rgb_to_hls, hls_to_rgb
 from os.path import exists
 from os import mkdir
 
-class Photoshop:
+isFunction = lambda x: type(x).__name__ == "function"
 
-    filter_list = [
-            "greyscale",               
-            "sepia",           
-            "invert",             
-            "oppose",             
-            "spotlight",                
-            "flip",          
-            "flipx",             
-            "mirror",              
-            "mirrorx",              
-            "rotate",            
-            "rotate2",            
-            "brightness",
-    ]
+class Photoshop:
 
     def __init__(self, img_path, mode):
         "Provide name for image stored within /Input/.\nImage will be edited with target mode and saved to output folder under the same name."
-
+        if mode == "METHODS":
+            self.__SetMethodList()
+            print(self.methods)
+            return
+        
         self.path = f"Input/{img_path}"
         self.applied = []
 
-        if not self.CheckDirs():
+        if not self.__CheckDirs():
             self.status = False
             return
 
@@ -47,7 +38,7 @@ class Photoshop:
             for fx in mode:
                 try:
                     this_fx = fx.lower()
-                    if not self.MatchFX(this_fx):
+                    if not self.__MatchFX(this_fx):
                         raise Exception()
                 
                 except:
@@ -58,7 +49,7 @@ class Photoshop:
         elif type(mode) == str:
             try:
                 this_fx = mode.lower()
-                if not self.MatchFX(this_fx):
+                if not self.__MatchFX(this_fx):
                     raise Exception()
                 
             except Exception as e:
@@ -80,7 +71,7 @@ class Photoshop:
         self.img.close()
 
 
-    def CheckDirs(self):
+    def __CheckDirs(self):
         changes_made = False
         if not exists("Input/"):
             mkdir("Input/")
@@ -95,7 +86,16 @@ class Photoshop:
         return not changes_made
 
 
-    def MatchFX(self, m):
+    def __SetMethodList(self):
+        dict = Photoshop.__dict__
+        ml = []
+        for k, v in dict.items():
+            if isFunction(v) and "__" not in k:
+                ml.append(k)
+        self.methods = ml
+
+
+    def __MatchFX(self, m):
         match(m):
             case "greyscale":
                 self.Greyscale()
@@ -131,7 +131,7 @@ class Photoshop:
                 self.Rotate(True)
 
             case "brightness":
-                m = self.getmul()
+                m = self.__getmul()
                 self.Brightness(m)
 
             case "blur":
@@ -335,7 +335,7 @@ class Photoshop:
                 self.img.putpixel((x,y), new_pixel)
 
 
-    def getmul(self):
+    def __getmul(self):
         try:
             x = float(input("Enter brightness multiplier: "))
             return x
@@ -343,7 +343,7 @@ class Photoshop:
             return self.getmul()
     
 
-    def Clamp(val, a, b):
+    def __Clamp(val, a, b):
         if val < a:
             return a
         
@@ -353,9 +353,9 @@ class Photoshop:
         return val
 
 
-    def GetSums(self, ox, oy, rx, ry):
+    def __GetSums(self, ox, oy, rx, ry):
         "'Blur' Util function"
-        c = Photoshop.Clamp
+        c = Photoshop.__Clamp
 
         sx = c(int(ox-(rx/2)), 0, self.width)
         ex = c(sx+rx, 0, self.width)
@@ -384,8 +384,6 @@ class Photoshop:
 
 
     def Blur(self):
-        current_buffer = self.img.getdata()
-
         tmp_buffer = []
 
         x_range = 5
@@ -393,7 +391,7 @@ class Photoshop:
 
         for y in range(self.height):
             for x in range(self.width):
-                avg_red, avg_green, avg_blue = self.GetSums(x,y,x_range,y_range)
+                avg_red, avg_green, avg_blue = self.__GetSums(x,y,x_range,y_range)
                 new_pixel = (avg_red, avg_green, avg_blue)
                 tmp_buffer.append(new_pixel)
         

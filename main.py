@@ -24,4 +24,5 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    example_argv = ["sloth.jpg", "invert", "blur", "oppose"]
     exit(main(argv))
