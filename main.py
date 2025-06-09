@@ -5,8 +5,12 @@ def main(argv: list[str]) -> int:
     argc = len(argv)
 
     if argc < 3:
-        print("Invalid arguments, expected target file + target filters.")
-        return 1
+        if argv[1] != "METHODS":
+            print("Invalid arguments, expected target file + target filters.")
+            return 1
+        else:
+            Photoshop(None, "METHODS")
+            return
 
     file = argv[1]
     filters = argv[2:]
@@ -24,5 +28,5 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    example_argv = ["sloth.jpg", "invert", "blur", "oppose"]
+    example_argv = [0,"sloth.jpg", 'Brightness', "blur", 'Greyscale', 'Sepia', 'Invert', 'Oppose', 'Spotlight', 'Mirrorx', 'Mirror', 'Flipx', 'Flip', 'Rotate']
     exit(main(argv))

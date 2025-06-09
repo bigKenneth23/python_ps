@@ -35,13 +35,27 @@ class Photoshop:
                 print("No filters provided.")
                 return
             
+            if mode[0] == "resize":
+                if len(mode) != 3:
+                    print("RESIZE USAGE: resize <NEW_WIDTH> <NEW_HEIGHT>")
+                    return
+                
+                wid,hei = mode[1],mode[2]
+                wid = int(wid)
+                hei = int(hei)
+
+                self.in_path = img_path
+                self.Resize(wid,hei)
+                return
+            
             for fx in mode:
                 try:
                     this_fx = fx.lower()
                     if not self.__MatchFX(this_fx):
                         raise Exception()
                 
-                except:
+                except Exception as e:
+                    print(e)
                     print(f"Invalid filter '{this_fx}'. No changes made.")
                     self.status = False
                     return
@@ -138,6 +152,15 @@ class Photoshop:
                 print("Blurring.")
                 print("Blurring image may take longer than other filters...")
                 self.Blur()
+
+            case "nored":
+                self.Remove("red")
+            
+            case "nogreen":
+                self.Remove("green")
+
+            case "noblue":
+                self.Remove("blue")
 
             case _:
                 print(f"Unknown filter: {m}")
@@ -396,3 +419,39 @@ class Photoshop:
                 tmp_buffer.append(new_pixel)
         
         self.img.putdata(tmp_buffer)
+
+
+    def Remove(self, colour):
+        bffr = list(self.img.getdata())
+
+        match (colour):
+            case ("red"):
+                new_bffr = [(0,g,b) for r,g,b in bffr]
+            case ("green"):
+                new_bffr = [(r,0,b) for r,g,b in bffr]
+            case ("blue"):
+                new_bffr = [(r,g,0) for r,g,b in bffr]
+        
+        self.img.putdata(new_bffr)
+    
+
+    def Resize(self, new_wid, new_hei):
+        new_img_bffr = []
+        
+        for iy in range(new_hei):
+            for ix in range(new_wid):
+                
+                tmp_x = int((ix/new_wid)*self.width)
+                tmp_y = int((iy/new_hei)*self.height)
+               
+                pxl = self.img.getpixel((tmp_x,tmp_y))                
+                
+                new_img_bffr.append(pxl)
+        
+        new_img = Image.new("RGB", (new_wid,new_hei))
+        new_img.putdata(new_img_bffr)
+        new_img.save(f"Output/{self.in_path}")
+
+        print("Resize Complete.")
+        self.status = True
+        self.img.close()
